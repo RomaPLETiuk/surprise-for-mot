@@ -1,0 +1,1347 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#FFF7F1">
+<title>Ангеліно, є питання... 🧸</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+
+<style>
+  :root{
+    --cream:#FFF7F1;
+    --pink-soft:#FFD9E9;
+    --pink:#F2789F;
+    --pink-deep:#E85D8A;
+    --lavender:#E9DFF8;
+    --lavender-deep:#C9AEEA;
+    --plum:#4A3350;
+    --plum-light:#8A7391;
+    --gold:#FFCB69;
+    --white:#FFFFFF;
+    --radius-lg:28px;
+    --radius-md:18px;
+    --radius-sm:12px;
+    --shadow: 0 18px 40px -12px rgba(232,93,138,0.35);
+  }
+
+  /* Dark palette only applies when explicitly chosen via the theme toggle;
+     light is the default regardless of system/OS theme. */
+  :root[data-theme="dark"]{
+    --cream:#241B2E;
+    --pink-soft:#3C2A3D;
+    --pink:#F08FB0;
+    --pink-deep:#EE7BA0;
+    --lavender:#332845;
+    --lavender-deep:#8A6FC9;
+    --plum:#F5ECF5;
+    --plum-light:#C7B4CE;
+    --gold:#FFCB69;
+    --white:#2E2338;
+    --shadow: 0 18px 40px -12px rgba(0,0,0,0.55);
+  }
+
+  *{box-sizing:border-box;}
+
+  html{
+    color-scheme: light;
+  }
+
+  html,body{
+    margin:0;
+    padding:0;
+    min-height:100%;
+    background:
+      radial-gradient(circle at 15% 10%, var(--lavender) 0%, transparent 45%),
+      radial-gradient(circle at 85% 90%, var(--pink-soft) 0%, transparent 50%),
+      var(--cream);
+    font-family:'Nunito', sans-serif;
+    color:var(--plum);
+    overflow-x:hidden;
+  }
+
+  h1,h2,h3,.heading{
+    font-family:'Fredoka', sans-serif;
+    font-weight:600;
+    color:var(--plum);
+    line-height:1.25;
+  }
+
+  .app{
+    max-width:460px;
+    margin:0 auto;
+    min-height:100vh;
+    padding:24px 18px 40px;
+    display:flex;
+    flex-direction:column;
+    position:relative;
+    z-index:1;
+  }
+
+  /* floating decorative hearts */
+  .floaty{
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    overflow:hidden;
+    z-index:0;
+  }
+  .floaty span{
+    position:absolute;
+    bottom:-10%;
+    font-size:22px;
+    opacity:0.35;
+    animation: floatUp linear infinite;
+  }
+  @keyframes floatUp{
+    0%{ transform: translateY(0) rotate(0deg); opacity:0;}
+    10%{opacity:0.4;}
+    90%{opacity:0.25;}
+    100%{ transform: translateY(-115vh) rotate(25deg); opacity:0;}
+  }
+
+  .card{
+    background:var(--white);
+    border-radius:var(--radius-lg);
+    box-shadow:var(--shadow);
+    padding:26px 22px;
+    position:relative;
+  }
+
+  .screen{
+    display:none;
+    flex-direction:column;
+    gap:18px;
+    animation: riseIn 0.5s cubic-bezier(.2,.9,.3,1);
+  }
+  .screen.active{display:flex;}
+  @keyframes riseIn{
+    from{opacity:0; transform:translateY(18px) scale(0.98);}
+    to{opacity:1; transform:translateY(0) scale(1);}
+  }
+
+  /* progress dots */
+  .progress{
+    display:flex;
+    gap:8px;
+    justify-content:center;
+    margin-bottom:6px;
+  }
+  .progress .dot{
+    width:8px;height:8px;border-radius:50%;
+    background:var(--lavender-deep);
+    opacity:0.4;
+    transition:all .3s ease;
+  }
+  .progress .dot.done{ background:var(--pink-deep); opacity:1; width:22px; border-radius:6px;}
+  .progress .dot.current{ opacity:1; background:var(--pink);}
+
+  /* mascot */
+  .mascot-wrap{
+    display:flex;
+    justify-content:center;
+    margin-bottom:-14px;
+  }
+  .mascot{
+    width:104px;
+    height:104px;
+    filter: drop-shadow(0 10px 14px rgba(232,93,138,0.28));
+    animation: idleBob 3.2s ease-in-out infinite;
+    outline:none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .mascot:focus,
+  .mascot:focus-visible,
+  .mascot:active{
+    outline:none;
+  }
+  .mascot.bounce{ animation: bounce 0.6s ease; }
+  .mascot.shake{ animation: shake 0.5s ease; }
+  @keyframes idleBob{
+    0%,100%{ transform: translateY(0) rotate(0deg); }
+    50%{ transform: translateY(-5px) rotate(-1.5deg); }
+  }
+  .mascot .eye{
+    transform-origin:center;
+    transform-box: fill-box;
+    animation: blinkEyes 4.6s ease-in-out infinite;
+  }
+  .mascot .eye-right{ animation-delay: 0.08s; }
+  .mascot .eye-left.wink{ animation: none !important; transform: scaleY(0.15); }
+  @keyframes blinkEyes{
+    0%, 90%, 100%{ transform: scaleY(1); }
+    94%{ transform: scaleY(0.12); }
+  }
+  .mascot .ear{
+    transform-origin: bottom center;
+    transform-box: fill-box;
+    animation: wiggleEar 3.6s ease-in-out infinite;
+  }
+  .mascot .ear-right{ animation-duration: 4.1s; animation-delay: 0.3s; }
+  @keyframes wiggleEar{
+    0%,100%{ transform: rotate(0deg); }
+    50%{ transform: rotate(4deg); }
+  }
+  @keyframes bounce{
+    0%,100%{transform:translateY(0) scale(1);}
+    30%{transform:translateY(-14px) scale(1.05);}
+    55%{transform:translateY(0) scale(0.97);}
+    75%{transform:translateY(-6px) scale(1.02);}
+  }
+  @keyframes shake{
+    0%,100%{transform:translateX(0) rotate(0);}
+    20%{transform:translateX(-6px) rotate(-4deg);}
+    40%{transform:translateX(6px) rotate(4deg);}
+    60%{transform:translateX(-4px) rotate(-2deg);}
+    80%{transform:translateX(4px) rotate(2deg);}
+  }
+
+  .bubble{
+    background:var(--lavender);
+    border-radius:20px;
+    padding:14px 18px;
+    font-size:16px;
+    font-weight:700;
+    text-align:center;
+    color:var(--plum);
+  }
+
+  .intro-stage{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:14px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .intro-bubble{
+    animation: riseIn 0.35s ease;
+    min-height:24px;
+    cursor:pointer;
+    width:100%;
+  }
+  .intro-bubble::after{
+    content:'✎';
+    opacity:0;
+  }
+  .intro-continue-btn{
+    background:linear-gradient(135deg, var(--pink-deep), var(--pink));
+    color:#fff;
+    padding:13px 26px;
+    box-shadow:0 12px 24px -8px rgba(232,93,138,0.5);
+    animation: pulse 1.8s ease-in-out infinite;
+  }
+  .intro-continue-btn.waiting{
+    opacity:0.55;
+    animation:none;
+    transform:scale(0.97);
+  }
+  .question-stage{
+    display:flex;
+    flex-direction:column;
+    gap:18px;
+    animation: riseIn 0.5s cubic-bezier(.2,.9,.3,1);
+  }
+
+  .subtext{
+    text-align:center;
+    color:var(--plum-light);
+    font-weight:600;
+    font-size:15px;
+    margin-top:-8px;
+  }
+
+  h1.title{
+    text-align:center;
+    font-size:26px;
+    margin:4px 0 0;
+  }
+
+  /* Screen 1 CTA */
+  .cta-zone{
+    position:relative;
+    height:230px;
+    margin-top:6px;
+  }
+  .btn{
+    border:none;
+    border-radius:999px;
+    font-family:'Fredoka', sans-serif;
+    font-weight:600;
+    font-size:17px;
+    cursor:pointer;
+    padding:16px 20px;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  .btn-yes{
+    position:absolute;
+    left:50%;
+    top:24px;
+    transform:translateX(-50%);
+    width:82%;
+    background:linear-gradient(135deg, var(--pink-deep), var(--pink));
+    color:#fff;
+    box-shadow:0 14px 26px -8px rgba(232,93,138,0.55);
+    animation: pulse 1.8s ease-in-out infinite;
+  }
+  @keyframes pulse{
+    0%,100%{ transform:translateX(-50%) scale(1); }
+    50%{ transform:translateX(-50%) scale(1.045); }
+  }
+  .btn-no{
+    position:absolute;
+    left:50%;
+    top:100px;
+    transform:translateX(-50%);
+    width:150px;
+    text-align:center;
+    background:var(--white);
+    color:var(--plum-light);
+    border:2px solid var(--lavender);
+    transition: left .28s cubic-bezier(.3,1.4,.4,1), top .28s cubic-bezier(.3,1.4,.4,1);
+  }
+
+  /* small sound toggle */
+  .sound-toggle{
+    position:fixed;
+    top:14px;
+    right:14px;
+    z-index:5;
+    width:38px;
+    height:38px;
+    border-radius:50%;
+    border:2px solid var(--lavender);
+    background:var(--white);
+    font-size:16px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    box-shadow:0 8px 18px -8px rgba(232,93,138,0.4);
+  }
+  .theme-toggle{
+    position:fixed;
+    top:58px;
+    right:14px;
+    z-index:5;
+    width:38px;
+    height:38px;
+    border-radius:50%;
+    border:2px solid var(--lavender);
+    background:var(--white);
+    font-size:16px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    box-shadow:0 8px 18px -8px rgba(232,93,138,0.4);
+  }
+
+  /* generic next/back nav */
+  .nav-row{
+    display:flex;
+    gap:10px;
+    margin-top:6px;
+  }
+  .btn-primary{
+    flex:1;
+    background:linear-gradient(135deg, var(--pink-deep), var(--pink));
+    color:#fff;
+    box-shadow:0 10px 22px -8px rgba(232,93,138,0.5);
+  }
+  .btn-primary:disabled{
+    background:#F3D9E2;
+    color:#fff;
+    box-shadow:none;
+    cursor:not-allowed;
+    opacity:0.8;
+  }
+  .btn-secondary{
+    background:var(--lavender);
+    color:var(--plum);
+    padding:16px 18px;
+  }
+
+  /* chips & pills */
+  .chip-row{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+  .chip{
+    border:2px solid var(--lavender);
+    background:var(--white);
+    color:var(--plum);
+    padding:10px 14px;
+    border-radius:999px;
+    font-weight:700;
+    font-size:14px;
+    cursor:pointer;
+    transition: all .15s ease;
+  }
+  .chip.active{
+    background:var(--pink-deep);
+    border-color:var(--pink-deep);
+    color:#fff;
+  }
+
+  .field-label{
+    font-weight:700;
+    font-size:14px;
+    color:var(--plum-light);
+    margin-bottom:6px;
+    display:block;
+  }
+  input[type="date"], input[type="time"], textarea{
+    width:100%;
+    border:2px solid var(--lavender);
+    border-radius:var(--radius-sm);
+    padding:12px 14px;
+    font-family:'Nunito', sans-serif;
+    font-size:15px;
+    font-weight:700;
+    color:var(--plum);
+    background:var(--white);
+    outline:none;
+  }
+  input[type="date"]:focus, input[type="time"]:focus, textarea:focus{
+    border-color:var(--pink);
+  }
+  textarea{
+    font-weight:600;
+    resize:vertical;
+    min-height:90px;
+  }
+
+  .pill-row{ display:flex; gap:8px; }
+  .pill{
+    flex:1;
+    text-align:center;
+    border:2px solid var(--lavender);
+    border-radius:var(--radius-sm);
+    padding:12px 6px;
+    font-weight:700;
+    cursor:pointer;
+    background:var(--white);
+  }
+  .pill.active{
+    background:var(--lavender);
+    border-color:var(--lavender-deep);
+  }
+
+  /* activity cards */
+  .activity-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+  }
+  .activity-card{
+    border:2px solid var(--lavender);
+    border-radius:var(--radius-sm);
+    background:var(--white);
+    padding:14px 10px;
+    text-align:center;
+    cursor:pointer;
+    transition: all .15s ease;
+  }
+  .activity-card .emoji{ font-size:26px; display:block; margin-bottom:6px;}
+  .activity-card span.label{ font-weight:700; font-size:13px; }
+  .activity-card.active{
+    border-color:var(--pink-deep);
+    background:var(--pink-soft);
+    transform: translateY(-2px);
+  }
+
+  #map{
+    width:100%;
+    height:220px;
+    border-radius:var(--radius-md);
+    border:2px solid var(--lavender);
+  }
+  .map-hint{
+    font-size:13px;
+    color:var(--plum-light);
+    font-weight:700;
+    text-align:center;
+  }
+  .map-hint.set{ color:var(--pink-deep); }
+
+  /* final screen */
+  .final-card{
+    text-align:center;
+    gap:14px;
+  }
+  .final-heart{
+    font-size:64px;
+    animation: bounce 1.2s ease infinite;
+  }
+  .final-text{
+    font-weight:800;
+    font-size:19px;
+  }
+  .final-ps{
+    font-size:14px;
+    color:var(--plum-light);
+    font-weight:600;
+    line-height:1.5;
+  }
+
+  .error-msg{
+    color:var(--pink-deep);
+    font-size:13px;
+    font-weight:700;
+    text-align:center;
+    min-height:16px;
+  }
+
+  @media (min-width:480px){
+    .cta-zone{ height:260px; }
+  }
+
+  .praise-toast{
+    position:fixed;
+    left:50%;
+    bottom:26px;
+    transform:translateX(-50%) translateY(20px);
+    background:var(--plum);
+    color:#fff;
+    font-weight:700;
+    font-size:14px;
+    padding:10px 18px;
+    border-radius:999px;
+    box-shadow:0 12px 26px -8px rgba(74,51,80,0.5);
+    opacity:0;
+    pointer-events:none;
+    transition: opacity .25s ease, transform .25s ease;
+    z-index:20;
+  }
+  .praise-toast.show{
+    opacity:1;
+    transform:translateX(-50%) translateY(0);
+  }
+</style>
+</head>
+<body>
+
+<button type="button" class="sound-toggle" id="soundToggle" title="Звук">🔊</button>
+<button type="button" class="theme-toggle" id="themeToggle" title="Тема">🌙</button>
+<div class="floaty" id="floaty"></div>
+
+<div class="app">
+
+  <!-- SCREEN 0: Trapping question -->
+  <section class="screen active" data-screen="0">
+    <div class="card">
+      <div class="mascot-wrap">
+        <svg class="mascot" id="mascot0" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <ellipse class="ear ear-left" cx="60" cy="45" rx="26" ry="24" fill="#D9A066"/>
+          <ellipse class="ear ear-right" cx="140" cy="45" rx="26" ry="24" fill="#D9A066"/>
+          <ellipse cx="60" cy="45" rx="13" ry="12" fill="#F2CBA0"/>
+          <ellipse cx="140" cy="45" rx="13" ry="12" fill="#F2CBA0"/>
+          <ellipse cx="100" cy="110" rx="72" ry="66" fill="#E8B27D"/>
+          <ellipse cx="100" cy="122" rx="34" ry="30" fill="#F6DCB8"/>
+          <g class="face-happy">
+            <circle class="eye eye-left" cx="76" cy="98" r="6.5" fill="#4A3350"/>
+            <circle class="eye eye-right" cx="124" cy="98" r="6.5" fill="#4A3350"/>
+            <path d="M82 128 Q100 145 118 128" stroke="#4A3350" stroke-width="5" fill="none" stroke-linecap="round"/>
+          </g>
+          <ellipse cx="100" cy="118" rx="9" ry="6" fill="#8A5A3A"/>
+        </svg>
+      </div>
+      <div id="introStage" class="intro-stage">
+        <div class="bubble intro-bubble" id="introBubble"></div>
+        <button type="button" class="btn intro-continue-btn" id="introContinueBtn">Привіт, Тедді! 👋</button>
+      </div>
+      <div id="questionStage" class="question-stage" style="display:none;">
+        <h1 class="title" id="questionTitle"></h1>
+        <p class="subtext">Сходимо на каву чи погуляємо разом?</p>
+        <div class="cta-zone" id="ctaZone">
+          <button class="btn btn-yes" id="btnYes">Давай! 💗</button>
+          <button class="btn btn-no" id="btnNo">Ні</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCREEN 1: Date & time -->
+  <section class="screen" data-screen="1">
+    <div class="progress">
+      <span class="dot current" data-dot="0"></span>
+      <span class="dot" data-dot="1"></span>
+      <span class="dot" data-dot="2"></span>
+      <span class="dot" data-dot="3"></span>
+    </div>
+    <div class="card">
+      <div class="mascot-wrap">
+        <svg class="mascot" id="mascot1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <ellipse class="ear ear-left" cx="60" cy="45" rx="26" ry="24" fill="#D9A066"/>
+          <ellipse class="ear ear-right" cx="140" cy="45" rx="26" ry="24" fill="#D9A066"/>
+          <ellipse cx="60" cy="45" rx="13" ry="12" fill="#F2CBA0"/>
+          <ellipse cx="140" cy="45" rx="13" ry="12" fill="#F2CBA0"/>
+          <ellipse cx="100" cy="110" rx="72" ry="66" fill="#E8B27D"/>
+          <ellipse cx="100" cy="122" rx="34" ry="30" fill="#F6DCB8"/>
+          <circle class="eye eye-left" cx="76" cy="98" r="6.5" fill="#4A3350"/>
+          <circle class="eye eye-right" cx="124" cy="98" r="6.5" fill="#4A3350"/>
+          <path d="M80 130 Q100 148 120 130" stroke="#4A3350" stroke-width="5" fill="none" stroke-linecap="round"/>
+          <ellipse cx="100" cy="118" rx="9" ry="6" fill="#8A5A3A"/>
+        </svg>
+      </div>
+      <div class="bubble">Супер! Тепер давай виберемо день і час, коли тобі зручно! ✨</div>
+
+      <div>
+        <span class="field-label">Швидкий вибір дня</span>
+        <div class="chip-row" id="dateChips">
+          <button type="button" class="chip" data-quick="today">Сьогодні</button>
+          <button type="button" class="chip" data-quick="tomorrow">Завтра</button>
+          <button type="button" class="chip" data-quick="weekend">Цими вихідними</button>
+        </div>
+      </div>
+
+      <div>
+        <span class="field-label">Або обери дату та час сама</span>
+        <div style="display:flex; gap:10px;">
+          <input type="date" id="dateInput">
+          <input type="time" id="timeInput">
+        </div>
+      </div>
+
+      <div>
+        <span class="field-label">Який час доби тобі більше підходить?</span>
+        <div class="pill-row" id="timeOfDay">
+          <div class="pill" data-tod="Ранок">Ранок 🌅</div>
+          <div class="pill" data-tod="Обід">Обід ☀️</div>
+          <div class="pill" data-tod="Вечір">Вечір 🌙</div>
+        </div>
+      </div>
+
+      <p class="error-msg" id="err1"></p>
+      <div class="nav-row">
+        <button type="button" class="btn btn-secondary" data-back>Назад</button>
+        <button type="button" class="btn btn-primary" id="next1">Далі</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCREEN 2: Activity + Map -->
+  <section class="screen" data-screen="2">
+    <div class="progress">
+      <span class="dot done" data-dot="0"></span>
+      <span class="dot current" data-dot="1"></span>
+      <span class="dot" data-dot="2"></span>
+      <span class="dot" data-dot="3"></span>
+    </div>
+    <div class="card">
+      <div class="mascot-wrap">
+        <svg class="mascot" id="mascot2" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <ellipse class="ear ear-left" cx="60" cy="45" rx="26" ry="24" fill="#D9A066"/>
+          <ellipse class="ear ear-right" cx="140" cy="45" rx="26" ry="24" fill="#D9A066"/>
+          <ellipse cx="60" cy="45" rx="13" ry="12" fill="#F2CBA0"/>
+          <ellipse cx="140" cy="45" rx="13" ry="12" fill="#F2CBA0"/>
+          <ellipse cx="100" cy="110" rx="72" ry="66" fill="#E8B27D"/>
+          <ellipse cx="100" cy="122" rx="34" ry="30" fill="#F6DCB8"/>
+          <circle class="eye eye-left" cx="76" cy="98" r="6.5" fill="#4A3350"/>
+          <circle class="eye eye-right" cx="124" cy="98" r="6.5" fill="#4A3350"/>
+          <path d="M80 130 Q100 148 120 130" stroke="#4A3350" stroke-width="5" fill="none" stroke-linecap="round"/>
+          <ellipse cx="100" cy="118" rx="9" ry="6" fill="#8A5A3A"/>
+        </svg>
+      </div>
+      <div class="bubble">Куди попрямуємо та де саме зустрінемось? Вибери варіант і постав точну мітку на карті! 📍</div>
+
+      <div class="activity-grid" id="activityGrid">
+        <div class="activity-card" data-activity="☕️ Затишна кав'ярня"><span class="emoji">☕️</span><span class="label">Затишна кав'ярня</span></div>
+        <div class="activity-card" data-activity="🌳 Прогулянка парком"><span class="emoji">🌳</span><span class="label">Прогулянка парком</span></div>
+        <div class="activity-card" data-activity="🍕 Смачна їжа / Піца"><span class="emoji">🍕</span><span class="label">Смачна їжа / Піца</span></div>
+        <div class="activity-card" data-activity="⛪️ Служба в храмі"><span class="emoji">⛪️</span><span class="label">Служба в храмі</span></div>
+        <div class="activity-card" data-activity="✨ Сюрприз" style="grid-column: span 2;"><span class="emoji">✨</span><span class="label">Сюрприз</span></div>
+      </div>
+
+      <div id="map"></div>
+      <p class="map-hint" id="mapHint">Торкнись карти, щоб поставити мітку зустрічі</p>
+
+      <p class="error-msg" id="err2"></p>
+      <div class="nav-row">
+        <button type="button" class="btn btn-secondary" data-back>Назад</button>
+        <button type="button" class="btn btn-primary" id="next2">Далі</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCREEN 3: Wishes -->
+  <section class="screen" data-screen="3">
+    <div class="progress">
+      <span class="dot done" data-dot="0"></span>
+      <span class="dot done" data-dot="1"></span>
+      <span class="dot current" data-dot="2"></span>
+      <span class="dot" data-dot="3"></span>
+    </div>
+    <div class="card">
+      <div class="mascot-wrap">
+        <svg class="mascot" id="mascot3" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <ellipse class="ear ear-left" cx="60" cy="45" rx="26" ry="24" fill="#D9A066"/>
+          <ellipse class="ear ear-right" cx="140" cy="45" rx="26" ry="24" fill="#D9A066"/>
+          <ellipse cx="60" cy="45" rx="13" ry="12" fill="#F2CBA0"/>
+          <ellipse cx="140" cy="45" rx="13" ry="12" fill="#F2CBA0"/>
+          <ellipse cx="100" cy="110" rx="72" ry="66" fill="#E8B27D"/>
+          <ellipse cx="100" cy="122" rx="34" ry="30" fill="#F6DCB8"/>
+          <circle class="eye eye-left" cx="76" cy="98" r="6.5" fill="#4A3350"/>
+          <circle class="eye eye-right" cx="124" cy="98" r="6.5" fill="#4A3350"/>
+          <path d="M80 130 Q100 148 120 130" stroke="#4A3350" stroke-width="5" fill="none" stroke-linecap="round"/>
+          <ellipse cx="100" cy="118" rx="9" ry="6" fill="#8A5A3A"/>
+        </svg>
+      </div>
+      <div class="bubble">Якщо маєш якісь особливі побажання — напиши тут. Але якщо нічого не спадає на думку, це поле можна просто пропустити! 😉</div>
+
+      <div>
+        <span class="field-label">Особливе побажання (необов'язково)</span>
+        <textarea id="wishInput" placeholder="Твоє особливе побажання до зустрічі..."></textarea>
+      </div>
+
+      <div class="nav-row">
+        <button type="button" class="btn btn-secondary" data-back>Назад</button>
+        <button type="button" class="btn btn-primary" id="next3">Далі</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCREEN 4: Review & Submit -->
+  <section class="screen" data-screen="4">
+    <div class="progress">
+      <span class="dot done" data-dot="0"></span>
+      <span class="dot done" data-dot="1"></span>
+      <span class="dot done" data-dot="2"></span>
+      <span class="dot current" data-dot="3"></span>
+    </div>
+    <div class="card">
+      <div class="mascot-wrap">
+        <svg class="mascot" id="mascot4" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <ellipse class="ear ear-left" cx="60" cy="45" rx="26" ry="24" fill="#D9A066"/>
+          <ellipse class="ear ear-right" cx="140" cy="45" rx="26" ry="24" fill="#D9A066"/>
+          <ellipse cx="60" cy="45" rx="13" ry="12" fill="#F2CBA0"/>
+          <ellipse cx="140" cy="45" rx="13" ry="12" fill="#F2CBA0"/>
+          <ellipse cx="100" cy="110" rx="72" ry="66" fill="#E8B27D"/>
+          <ellipse cx="100" cy="122" rx="34" ry="30" fill="#F6DCB8"/>
+          <circle class="eye eye-left" cx="76" cy="98" r="6.5" fill="#4A3350"/>
+          <circle class="eye eye-right" cx="124" cy="98" r="6.5" fill="#4A3350"/>
+          <path d="M82 128 Q100 145 118 128" stroke="#4A3350" stroke-width="5" fill="none" stroke-linecap="round"/>
+          <ellipse cx="100" cy="118" rx="9" ry="6" fill="#8A5A3A"/>
+        </svg>
+      </div>
+      <div class="bubble">Все готово? Перевір і надсилай — я вже хвилююсь! 💌</div>
+
+      <div id="summaryBox" style="background:var(--cream); border-radius:var(--radius-md); padding:14px 16px; font-weight:700; font-size:14px; color:var(--plum-light); line-height:1.7;"></div>
+
+      <p class="error-msg" id="err4"></p>
+      <div class="nav-row">
+        <button type="button" class="btn btn-secondary" data-back>Назад</button>
+        <button type="button" class="btn btn-primary" id="submitBtn">Надіслати відповідь ✨</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCREEN 5: Success -->
+  <section class="screen" data-screen="5">
+    <div class="card final-card">
+      <div class="final-heart">❤️</div>
+      <svg class="mascot" style="width:130px;height:130px;margin:0 auto;" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+        <ellipse class="ear ear-left" cx="60" cy="45" rx="26" ry="24" fill="#D9A066"/>
+        <ellipse class="ear ear-right" cx="140" cy="45" rx="26" ry="24" fill="#D9A066"/>
+        <ellipse cx="60" cy="45" rx="13" ry="12" fill="#F2CBA0"/>
+        <ellipse cx="140" cy="45" rx="13" ry="12" fill="#F2CBA0"/>
+        <ellipse cx="100" cy="110" rx="72" ry="66" fill="#E8B27D"/>
+        <ellipse cx="100" cy="122" rx="34" ry="30" fill="#F6DCB8"/>
+        <circle class="eye eye-left" cx="76" cy="98" r="6.5" fill="#4A3350"/>
+        <circle class="eye eye-right" cx="124" cy="98" r="6.5" fill="#4A3350"/>
+        <path d="M82 128 Q100 145 118 128" stroke="#4A3350" stroke-width="5" fill="none" stroke-linecap="round"/>
+        <ellipse cx="100" cy="118" rx="9" ry="6" fill="#8A5A3A"/>
+      </svg>
+      <p class="final-text">Ура! Відповідь відправлена. Чекаю на нашу зустріч! ❤️</p>
+      <p class="final-ps">P.S. Рома трохи сором'язливий і не завжди балакучий, але повір, він дуже чекає на цей день і подбає, щоб усе пройшло чудово!</p>
+    </div>
+  </section>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ====== EDIT ME ======
+  // Ім'я, яке підставляється в усі тексти сайту.
+  const RECIPIENT_NAME = "Ангеліна";
+  // =====================
+
+  const FORMSPREE_ENDPOINT = "https://formspree.io/f/mrpbqoay";
+
+  const state = {
+    date: "",
+    time: "",
+    timeOfDay: "",
+    activity: "",
+    lat: null,
+    lng: null,
+    mapLink: "",
+    wish: ""
+  };
+
+  // ---------- sound (WebAudio, no permissions needed) ----------
+  let soundEnabled = true;
+  let audioCtx = null;
+  const soundToggle = document.getElementById('soundToggle');
+  soundToggle.addEventListener('click', ()=>{
+    soundEnabled = !soundEnabled;
+    soundToggle.textContent = soundEnabled ? '🔊' : '🔇';
+  });
+
+  // ---------- theme toggle (light by default, dark only if user picks it) ----------
+  const themeToggle = document.getElementById('themeToggle');
+
+  function applyThemeIcon(isDark){
+    themeToggle.textContent = isDark ? '☀️' : '🌙';
+  }
+
+  function getSavedTheme(){
+    try{ return localStorage.getItem('teddyTheme'); } catch(e){ return null; }
+  }
+  function saveTheme(value){
+    try{ localStorage.setItem('teddyTheme', value); } catch(e){ /* ignore */ }
+  }
+
+  const saved = getSavedTheme();
+  if(saved === 'dark'){
+    document.documentElement.setAttribute('data-theme', 'dark');
+    applyThemeIcon(true);
+  } else {
+    document.documentElement.removeAttribute('data-theme');
+    applyThemeIcon(false);
+  }
+
+  themeToggle.addEventListener('click', ()=>{
+    const currentlyDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const next = currentlyDark ? 'light' : 'dark';
+    if(next === 'dark'){
+      document.documentElement.setAttribute('data-theme', 'dark');
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+    }
+    saveTheme(next);
+    applyThemeIcon(next === 'dark');
+    playClick();
+  });
+
+  function getAudioCtx(){
+    if(!audioCtx){
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if(!Ctx) return null;
+      audioCtx = new Ctx();
+    }
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+    return audioCtx;
+  }
+
+  function playTone({freq=440, duration=0.18, type='sine', volume=0.14, glideTo=null, delay=0}){
+    if(!soundEnabled) return;
+    const ctx = getAudioCtx();
+    if(!ctx) return;
+    try{
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = type;
+      const t0 = ctx.currentTime + delay;
+      osc.frequency.setValueAtTime(freq, t0);
+      if(glideTo){ osc.frequency.exponentialRampToValueAtTime(glideTo, t0 + duration); }
+      gain.gain.setValueAtTime(0.0001, t0);
+      gain.gain.exponentialRampToValueAtTime(volume, t0 + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(t0);
+      osc.stop(t0 + duration + 0.05);
+    }catch(e){ /* ignore audio errors */ }
+  }
+
+  function playSadBoop(){
+    playTone({freq:320, glideTo:180, duration:0.22, type:'sine', volume:0.12});
+  }
+  function playHappyChime(){
+    playTone({freq:520, glideTo:780, duration:0.16, type:'triangle', volume:0.14});
+    playTone({freq:660, duration:0.18, type:'triangle', volume:0.12, delay:0.12});
+  }
+  function playClick(){
+    playTone({freq:700, duration:0.08, type:'sine', volume:0.07});
+  }
+  function playSuccessChime(){
+    [523.25,659.25,783.99,1046.5].forEach((f,i)=>{
+      playTone({freq:f, duration:0.35, type:'sine', volume:0.13, delay:i*0.09});
+    });
+  }
+
+  // ---------- decorative floating hearts ----------
+  const floaty = document.getElementById('floaty');
+  const heartEmojis = ['💗','💕','🌸','✨'];
+  for(let i=0;i<10;i++){
+    const s = document.createElement('span');
+    s.textContent = heartEmojis[i % heartEmojis.length];
+    s.style.left = (Math.random()*100)+'%';
+    s.style.fontSize = (14+Math.random()*16)+'px';
+    s.style.animationDuration = (10+Math.random()*10)+'s';
+    s.style.animationDelay = (Math.random()*10)+'s';
+    floaty.appendChild(s);
+  }
+
+  // ---------- name substitution ----------
+  document.title = `${RECIPIENT_NAME}, є питання... 🧸`;
+  document.getElementById('questionTitle').textContent =
+    `${RECIPIENT_NAME}, у мене є до тебе важливе питання... 🧸`;
+
+  // wink one eye briefly on a given mascot <svg>
+  function mascotWink(svgEl){
+    if(!svgEl) return;
+    const leftEye = svgEl.querySelector('.eye-left');
+    if(!leftEye) return;
+    leftEye.classList.add('wink');
+    setTimeout(()=> leftEye.classList.remove('wink'), 260);
+  }
+
+  // small heart burst near an element, for extra tactile feedback
+  function heartBurstNear(el){
+    if(typeof confetti !== 'function') return;
+    const rect = el.getBoundingClientRect();
+    const x = (rect.left + rect.width/2) / window.innerWidth;
+    const y = (rect.top + rect.height/2) / window.innerHeight;
+    confetti({ particleCount: 16, spread: 55, startVelocity: 20, scalar: 0.65,
+      origin: {x, y}, colors: ['#F2789F','#FFD9E9','#C9AEEA','#FFCB69'] });
+  }
+
+  // Petting the bear: works on every screen, purely for delight, never advances anything.
+  const petPhrases = ['Хі-хі! 🧸', 'Мур-р! 💕', 'Лоскотно! 😄', 'Дякую за обійми! 🤗'];
+  document.querySelectorAll('.mascot').forEach(svgEl=>{
+    svgEl.style.cursor = 'pointer';
+    svgEl.addEventListener('click', ()=>{
+      svgEl.classList.remove('bounce');
+      void svgEl.offsetWidth; // restart animation
+      svgEl.classList.add('bounce');
+      setTimeout(()=> svgEl.classList.remove('bounce'), 650);
+      mascotWink(svgEl);
+      playClick();
+      heartBurstNear(svgEl);
+      showToast(petPhrases[Math.floor(Math.random()*petPhrases.length)]);
+    });
+  });
+
+  // ---------- bear intro sequence (typewriter + explicit reply button) ----------
+  const introLines = [
+    `Привіт, ${RECIPIENT_NAME}! Я — Тедді, маленький помічник Роми 🧸`,
+    `Він доручив мені передати тобі одне дуже важливе питання...`
+  ];
+  const introBtnLabels = ['Привіт, Тедді! 👋', 'Кажи вже! 😄'];
+  let introIdx = 0;
+  let isTyping = false;
+  let typeTimer = null;
+
+  const introStage = document.getElementById('introStage');
+  const introBubble = document.getElementById('introBubble');
+  const introContinueBtn = document.getElementById('introContinueBtn');
+  const questionStage = document.getElementById('questionStage');
+
+  function typeLine(text){
+    isTyping = true;
+    introBubble.textContent = '';
+    introContinueBtn.classList.add('waiting');
+    let i = 0;
+    clearTimeout(typeTimer);
+    (function step(){
+      if(i < text.length){
+        introBubble.textContent += text[i];
+        i++;
+        typeTimer = setTimeout(step, 22);
+      } else {
+        isTyping = false;
+        introContinueBtn.classList.remove('waiting');
+      }
+    })();
+  }
+
+  function finishTypingInstantly(){
+    clearTimeout(typeTimer);
+    introBubble.textContent = introLines[introIdx];
+    isTyping = false;
+    introContinueBtn.classList.remove('waiting');
+  }
+
+  function showIntroLine(){
+    introContinueBtn.textContent = introBtnLabels[introIdx] || 'Далі →';
+    typeLine(introLines[introIdx]);
+    mascotWink(document.getElementById('mascot0'));
+  }
+  showIntroLine();
+
+  introBubble.addEventListener('click', ()=>{
+    if(isTyping){ finishTypingInstantly(); playClick(); }
+  });
+
+  introContinueBtn.addEventListener('click', ()=>{
+    if(isTyping){
+      finishTypingInstantly();
+      playClick();
+      return;
+    }
+    playClick();
+    heartBurstNear(introContinueBtn);
+    introIdx++;
+    if(introIdx < introLines.length){
+      showIntroLine();
+    } else {
+      introStage.style.display = 'none';
+      questionStage.style.display = 'flex';
+      centerNoButtonUnderYes();
+    }
+  });
+
+  // ---------- varied bear dialogue per step ----------
+  const screenPhrases = {
+    1: [
+      'Супер! Тепер давай виберемо день і час, коли тобі зручно! ✨',
+      'Ура, ти сказала так! Коли тобі буде зручно зустрітись? 🗓️',
+      'Чудово! Обери день і час — я вже нетерплячий 🧸💫'
+    ],
+    2: [
+      'Куди попрямуємо та де саме зустрінемось? Вибери варіант і постав точну мітку на карті! 📍',
+      'А тепер найцікавіше — обери формат і познач місце на мапі! 🗺️',
+      'Де саме зустрінемось? Постав мітку, щоб ніхто не заблукав 😉📍'
+    ],
+    3: [
+      "Якщо маєш якісь особливі побажання — напиши тут. Але якщо нічого не спадає на думку, це поле можна просто пропустити! 😉",
+      'Є щось особливе, про що варто знати заздалегідь? Пиши сміливо! 📝',
+      'Побажання? Я все ретельно передам Ромі, він слухняний 🧸✍️'
+    ],
+    4: [
+      'Все готово? Перевір і надсилай — я вже хвилююсь! 💌',
+      'Останній крок! Глянь усе ще раз і тисни надіслати 🚀',
+      'Ти майже завершила! Тедді тримає кулачки 🤞💗'
+    ]
+  };
+
+  function refreshBubble(idx){
+    const arr = screenPhrases[idx];
+    if(!arr) return;
+    const bubbleEl = document.querySelector(`[data-screen="${idx}"] .bubble`);
+    if(bubbleEl) bubbleEl.textContent = arr[Math.floor(Math.random()*arr.length)];
+    mascotWink(document.getElementById('mascot'+idx));
+  }
+
+  // ---------- encouragement toast ----------
+  const praises = [
+    'Гарний вибір! 🌸',
+    'Ти обираєш ідеально 💫',
+    'Оце я розумію стиль! 😍',
+    'Супер, рухаємось далі! 🚀',
+    'Тедді схвалює! 🧸💗',
+    'Ммм, чудово! ✨'
+  ];
+  let toastTimer = null;
+  const toastEl = document.createElement('div');
+  toastEl.className = 'praise-toast';
+  document.body.appendChild(toastEl);
+  function showToast(text){
+    toastEl.textContent = '🧸 ' + text;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(()=> toastEl.classList.remove('show'), 1500);
+  }
+  function showPraiseToast(){
+    showToast(praises[Math.floor(Math.random()*praises.length)]);
+  }
+
+  // ---------- screen navigation ----------
+  const screens = document.querySelectorAll('.screen');
+  function goTo(idx){
+    screens.forEach(s => s.classList.toggle('active', s.dataset.screen == idx));
+    refreshBubble(idx);
+    window.scrollTo({top:0, behavior:'smooth'});
+  }
+  document.querySelectorAll('[data-back]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const current = document.querySelector('.screen.active');
+      const idx = parseInt(current.dataset.screen,10);
+      goTo(Math.max(0, idx-1));
+    });
+  });
+
+  // ---------- Screen 0: trap question ----------
+  const ctaZone = document.getElementById('ctaZone');
+  const btnNo = document.getElementById('btnNo');
+  const btnYes = document.getElementById('btnYes');
+  const mascot0 = document.getElementById('mascot0');
+
+  function reactSad(){
+    mascot0.classList.remove('bounce');
+    mascot0.classList.add('shake');
+    setTimeout(()=>mascot0.classList.remove('shake'), 500);
+  }
+
+  // Center "Ні" horizontally, just below "Давай", so it starts tidy and never
+  // spawns on top of the yes-button.
+  function centerNoButtonUnderYes(){
+    const zoneRect = ctaZone.getBoundingClientRect();
+    const yesRect = btnYes.getBoundingClientRect();
+    const gap = 16;
+    const topPx = (yesRect.bottom - zoneRect.top) + gap;
+    btnNo.style.transform = 'translateX(-50%)';
+    btnNo.style.left = '50%';
+    btnNo.style.top = topPx + 'px';
+  }
+  centerNoButtonUnderYes();
+  window.addEventListener('load', centerNoButtonUnderYes);
+
+  function moveNoButton(){
+    const zoneRect = ctaZone.getBoundingClientRect();
+    const yesRect = btnYes.getBoundingClientRect();
+    const btnW = btnNo.offsetWidth;
+    const btnH = btnNo.offsetHeight;
+
+    // Keep "Ні" strictly below "Давай" so the two can never overlap,
+    // regardless of the random horizontal position chosen.
+    const safeTop = (yesRect.bottom - zoneRect.top) + 10;
+    let maxY = zoneRect.height - btnH - 10;
+    let minY = Math.min(safeTop, Math.max(10, maxY));
+    if(maxY < minY) maxY = minY + 10;
+
+    const maxX = Math.max(10, zoneRect.width - btnW - 10);
+    const x = 10 + Math.random()*Math.max(0, maxX-10);
+    const y = minY + Math.random()*Math.max(0, maxY-minY);
+
+    btnNo.style.transform = 'none';
+    btnNo.style.left = x+'px';
+    btnNo.style.top = y+'px';
+    playSadBoop();
+    reactSad();
+  }
+
+  ['pointerenter','touchstart','mouseover'].forEach(evt=>{
+    btnNo.addEventListener(evt, (e)=>{ e.preventDefault(); moveNoButton(); }, {passive:false});
+  });
+  btnNo.addEventListener('click', (e)=>{ e.preventDefault(); moveNoButton(); });
+
+  btnYes.addEventListener('click', ()=>{
+    mascot0.classList.add('bounce');
+    playHappyChime();
+    fireConfetti();
+    setTimeout(()=>goTo(1), 500);
+  });
+
+  function fireConfetti(){
+    if (typeof confetti !== 'function') return;
+    confetti({ particleCount: 90, spread: 75, origin:{y:0.6}, colors:['#F2789F','#E85D8A','#FFD9E9','#C9AEEA','#FFCB69'] });
+    setTimeout(()=>{
+      confetti({ particleCount: 40, angle:60, spread:60, origin:{x:0}, colors:['#F2789F','#FFD9E9'] });
+      confetti({ particleCount: 40, angle:120, spread:60, origin:{x:1}, colors:['#C9AEEA','#FFCB69'] });
+    }, 250);
+  }
+
+  // ---------- Screen 1: date & time ----------
+  const dateInput = document.getElementById('dateInput');
+  const timeInput = document.getElementById('timeInput');
+  const dateChips = document.querySelectorAll('#dateChips .chip');
+  const todPills = document.querySelectorAll('#timeOfDay .pill');
+  const err1 = document.getElementById('err1');
+
+  function fmtDate(d){
+    const y = d.getFullYear();
+    const m = String(d.getMonth()+1).padStart(2,'0');
+    const day = String(d.getDate()).padStart(2,'0');
+    return `${y}-${m}-${day}`;
+  }
+
+  dateChips.forEach(chip=>{
+    chip.addEventListener('click', ()=>{
+      dateChips.forEach(c=>c.classList.remove('active'));
+      chip.classList.add('active');
+      const today = new Date();
+      let d = new Date(today);
+      if(chip.dataset.quick === 'tomorrow'){
+        d.setDate(today.getDate()+1);
+      } else if(chip.dataset.quick === 'weekend'){
+        const day = today.getDay(); // 0 = Sunday, 6 = Saturday
+        let diff = (6 - day + 7) % 7;
+        if(diff === 0) diff = 7;
+        d.setDate(today.getDate()+diff);
+      }
+      dateInput.value = fmtDate(d);
+    });
+  });
+
+  dateInput.addEventListener('input', ()=> dateChips.forEach(c=>c.classList.remove('active')));
+
+  const approxTimeByTod = { 'Ранок':'09:00', 'Обід':'13:00', 'Вечір':'19:00' };
+  todPills.forEach(p=>{
+    p.addEventListener('click', ()=>{
+      todPills.forEach(x=>x.classList.remove('active'));
+      p.classList.add('active');
+      state.timeOfDay = p.dataset.tod;
+      timeInput.value = approxTimeByTod[p.dataset.tod] || timeInput.value;
+      playClick();
+    });
+  });
+
+  document.getElementById('next1').addEventListener('click', ()=>{
+    if(!dateInput.value){
+      err1.textContent = 'Будь ласка, вибери дату 🌸';
+      return;
+    }
+    state.date = dateInput.value;
+    state.time = timeInput.value || '';
+    err1.textContent = '';
+    showPraiseToast();
+    goTo(2);
+  });
+
+  // ---------- Screen 2: activity + map ----------
+  const activityCards = document.querySelectorAll('.activity-card');
+  const err2 = document.getElementById('err2');
+  const mapHint = document.getElementById('mapHint');
+
+  activityCards.forEach(card=>{
+    card.addEventListener('click', ()=>{
+      activityCards.forEach(c=>c.classList.remove('active'));
+      card.classList.add('active');
+      state.activity = card.dataset.activity;
+    });
+  });
+
+  // Default map center: Почаїв, Тернопільська область
+  const DEFAULT_MAP_CENTER = [50.0994, 25.5342];
+  const DEFAULT_MAP_ZOOM = 15;
+
+  let map, marker;
+  function initMap(){
+    if(map) return;
+    map = L.map('map', { zoomControl:true }).setView(DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap'
+    }).addTo(map);
+
+    map.on('click', function(e){
+      setMarker(e.latlng.lat, e.latlng.lng);
+    });
+
+    setTimeout(()=> map.invalidateSize(), 200);
+  }
+
+  function setMarker(lat, lng){
+    if(marker){
+      marker.setLatLng([lat,lng]);
+    } else {
+      marker = L.marker([lat,lng], {draggable:true}).addTo(map);
+      marker.on('dragend', function(){
+        const pos = marker.getLatLng();
+        setMarker(pos.lat, pos.lng);
+      });
+    }
+    state.lat = lat;
+    state.lng = lng;
+    state.mapLink = `https://www.google.com/maps?q=${lat.toFixed(6)},${lng.toFixed(6)}`;
+    mapHint.textContent = `Мітку поставлено 💗 (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
+    mapHint.classList.add('set');
+  }
+
+  document.getElementById('next2').addEventListener('click', ()=>{
+    if(!state.activity){
+      err2.textContent = 'Обери, будь ласка, формат зустрічі 🌷';
+      return;
+    }
+    if(state.lat === null){
+      err2.textContent = 'Постав мітку на карті, де зустрінемось 📍';
+      return;
+    }
+    err2.textContent = '';
+    showPraiseToast();
+    goTo(3);
+  });
+
+  // ---------- Screen 3: wishes ----------
+  document.getElementById('next3').addEventListener('click', ()=>{
+    state.wish = document.getElementById('wishInput').value.trim();
+    buildSummary();
+    showPraiseToast();
+    goTo(4);
+  });
+
+  // ---------- Screen 4: summary + submit ----------
+  const summaryBox = document.getElementById('summaryBox');
+  function buildSummary(){
+    const rows = [
+      ['📅 Дата', state.date || '—'],
+      ['⏰ Час', state.time || (state.timeOfDay || '—')],
+      ['🌤 Частина дня', state.timeOfDay || '—'],
+      ['💌 Формат', state.activity || '—'],
+      ['📍 Місце', state.mapLink ? 'мітку встановлено' : '—'],
+      ['📝 Побажання', state.wish || 'немає'],
+    ];
+    summaryBox.innerHTML = rows.map(r=>`<div>${r[0]}: <span style="color:var(--plum)">${r[1]}</span></div>`).join('');
+  }
+
+  const submitBtn = document.getElementById('submitBtn');
+  const err4 = document.getElementById('err4');
+
+  submitBtn.addEventListener('click', async ()=>{
+    err4.textContent = '';
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Надсилаю... 💌';
+
+    const payload = {
+      "Ім'я": RECIPIENT_NAME,
+      "Дата": state.date,
+      "Час": state.time,
+      "Частина дня": state.timeOfDay,
+      "Формат зустрічі": state.activity,
+      "Координати": state.lat !== null ? `${state.lat}, ${state.lng}` : '',
+      "Посилання на карту": state.mapLink,
+      "Побажання": state.wish
+    };
+
+    try{
+      const response = await fetch(FORMSPREE_ENDPOINT, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if(response.ok){
+        playSuccessChime();
+        fireConfetti();
+        goTo(5);
+      } else {
+        throw new Error('Formspree error');
+      }
+    } catch(e){
+      err4.textContent = 'Ой, щось пішло не так. Спробуй ще раз 🥺';
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Надіслати відповідь ✨';
+      return;
+    }
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Надіслати відповідь ✨';
+  });
+
+  // init map lazily once screen 2 is first shown
+  const screen2 = document.querySelector('[data-screen="2"]');
+  const observer = new MutationObserver(()=>{
+    if(screen2.classList.contains('active')) initMap();
+  });
+  observer.observe(screen2, { attributes:true, attributeFilter:['class'] });
+
+})();
+</script>
+</body>
+</html>
